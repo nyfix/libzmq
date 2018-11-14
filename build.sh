@@ -60,7 +60,7 @@ $(which cmake) -DCMAKE_INSTALL_PREFIX=${INSTALL_PREFIX} -DCMAKE_BUILD_TYPE=${CMA
    -DBUILD_STATIC=Off \
    -DWITH_OPENPGM=Off \
    -DWITH_DOCS=Off \
-   ../${PROJECT_NAME}
+   ../upstream
 rc=$?
 [[ $rc != 0 ]] && exit $rc
 
@@ -72,4 +72,4 @@ cd -
 
 # copy source to facilitate debugging
 mkdir -p ${INSTALL_PREFIX}/src
-cd repo && cp -rp src ${INSTALL_PREFIX}
+cd upstream && cp -rp src ${INSTALL_PREFIX}
