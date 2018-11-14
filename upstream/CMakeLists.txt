@@ -7,6 +7,11 @@ else()
   cmake_minimum_required(VERSION 2.8.12)
 endif()
 
+# improve stack traces
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fno-omit-frame-pointer")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fno-omit-frame-pointer")
+
+# Address Sanitizer
 option(ENABLE_ASAN "Build with address sanitizer)" OFF)
 if(ENABLE_ASAN)
   message(STATUS "Instrumenting with Address Sanitizer")
@@ -43,16 +48,19 @@ if(${CMAKE_SYSTEM_NAME} STREQUAL Darwin)
   set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 endif()
 
+# Transact & BusTalk are not compatible w/C++11 yet
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++98 -D_GLIBCXX_USE_CXX11_ABI=0")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu99")
 include(CheckCXXCompilerFlag)
-check_cxx_compiler_flag("-std=gnu++11" COMPILER_SUPPORTS_CXX11)
-if(COMPILER_SUPPORTS_CXX11)
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++11")
-endif()
+#check_cxx_compiler_flag("-std=gnu++11" COMPILER_SUPPORTS_CXX11)
+#if(COMPILER_SUPPORTS_CXX11)
+#  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++11")
+#endif()
 include(CheckCCompilerFlag)
-check_c_compiler_flag("-std=gnu11" COMPILER_SUPPORTS_C11)
-if(COMPILER_SUPPORTS_C11)
-  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu11")
-endif()
+#check_c_compiler_flag("-std=gnu11" COMPILER_SUPPORTS_C11)
+#if(COMPILER_SUPPORTS_C11)
+#  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu11")
+#endif()
 
 include(ZMQSupportMacros)
 
