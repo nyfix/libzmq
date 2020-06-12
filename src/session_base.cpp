@@ -451,7 +451,7 @@ void zmq::session_base_t::engine_error (zmq::i_engine::error_reason_t reason_)
                 reconnect ();
                 break;
             }
-            /* FALLTHROUGH */
+
         case i_engine::protocol_error:
             if (_pending) {
                 if (_pipe)

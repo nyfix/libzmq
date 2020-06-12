@@ -122,6 +122,7 @@ zmq::stream_engine_base_t::stream_engine_base_t (
     _has_timeout_timer (false),
     _has_heartbeat_timer (false),
     _peer_address (get_peer_address (fd_)),
+    _greeting_bytes_read (0),
     _s (fd_),
     _handle (static_cast<handle_t> (NULL)),
     _plugged (false),
@@ -574,6 +575,11 @@ void zmq::stream_engine_base_t::mechanism_ready ()
         alloc_assert (_metadata);
     }
 
+    if (_has_handshake_timer) {
+        cancel_timer (handshake_timer_id);
+        _has_handshake_timer = false;
+    }
+
     _socket->event_handshake_succeeded (_endpoint_uri_pair, 0);
 }
 
@@ -681,6 +687,13 @@ void zmq::stream_engine_base_t::error (error_reason_t reason_)
             || _mechanism->status () == mechanism_t::handshaking)) {
         const int err = errno;
         _socket->event_handshake_failed_no_detail (_endpoint_uri_pair, err);
+        // special case: connecting to non-ZMTP process which immediately drops connection,
+        // or which never responds with greeting, should be treated as a protocol error
+        // (i.e. stop reconnect)
+        if  ( ( (reason_ == connection_error) || (reason_ == timeout_error) )
+            && (_options.reconnect_stop & ZMQ_RECONNECT_STOP_HANDSHAKE_FAILED)) {
+            reason_ = protocol_error;
+        }
     }
 
     _socket->event_disconnected (_endpoint_uri_pair, _s);
@@ -721,7 +734,10 @@ void zmq::stream_engine_base_t::timer_event (int id_)
     if (id_ == handshake_timer_id) {
         _has_handshake_timer = false;
         //  handshake timer expired before handshake completed, so engine fail
-        error (timeout_error);
+        if (_greeting_bytes_read > 0)
+            error (protocol_error);
+        else
+            error (timeout_error);
     } else if (id_ == heartbeat_ivl_timer_id) {
         _next_msg = &stream_engine_base_t::produce_ping_message;
         out_event ();

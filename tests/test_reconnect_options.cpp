@@ -216,6 +216,55 @@ void reconnect_stop_on_refused ()
     test_context_socket_close_zero_linger (sub_mon);
 }
 
+
+// test stopping reconnect on connection refused
+void reconnect_stop_on_handshake_failed ()
+{
+    // setup sub socket
+    void *sub = test_context_socket (ZMQ_SUB);
+    //  Monitor all events on sub
+    TEST_ASSERT_SUCCESS_ERRNO (
+      zmq_socket_monitor (sub, "inproc://monitor-sub", ZMQ_EVENT_ALL));
+    //  Create socket for collecting monitor events
+    void *sub_mon = test_context_socket (ZMQ_PAIR);
+    //  Connect so they'll get events
+    TEST_ASSERT_SUCCESS_ERRNO (zmq_connect (sub_mon, "inproc://monitor-sub"));
+    // set option to stop reconnecting on error
+    int stopReconnectOnError = ZMQ_RECONNECT_STOP_HANDSHAKE_FAILED;
+    TEST_ASSERT_SUCCESS_ERRNO (zmq_setsockopt (sub, ZMQ_RECONNECT_STOP,
+                                               &stopReconnectOnError,
+                                               sizeof (stopReconnectOnError)));
+    // connect to sshd
+    TEST_ASSERT_SUCCESS_ERRNO (zmq_connect (sub, "tcp://127.0.0.1:22"));
+
+    //  confirm that we get following events
+    //expect_monitor_event (sub_mon, ZMQ_EVENT_CONNECT_DELAYED);
+    //expect_monitor_event (sub_mon, ZMQ_EVENT_CONNECTED);
+    //expect_monitor_event (sub_mon, ZMQ_EVENT_DISCONNECTED);
+
+    // ZMQ_EVENT_DISCONNECTED should be last event, because of ZMQ_RECONNECT_STOP set above
+    int value;
+    char *event_address;
+    int event = get_monitor_event_with_timeout (sub_mon, &value, &event_address,
+                                             2 * 1000);
+    int limit = 0;
+    while ((event != -1) && (++limit < 1000)) {
+        const char* eventName = get_zmqEventName(event);
+        printf("Got event: %s\n", eventName);
+        //print_unexpected_event_stderr (event, rc, 0, -1);
+        event = get_monitor_event_with_timeout (sub_mon, &value, &event_address,
+                                             2 * 1000);
+    }
+
+    //  Close sub
+    //  TODO why does this use zero_linger?
+    test_context_socket_close_zero_linger (sub);
+
+    //  Close monitor
+    //  TODO why does this use zero_linger?
+    test_context_socket_close_zero_linger (sub_mon);
+}
+
 void setUp ()
 {
     setup_test_context ();
@@ -232,9 +281,10 @@ int main (void)
 
     UNITY_BEGIN ();
 
-    RUN_TEST (reconnect_default);
-    RUN_TEST (reconnect_success);
-    RUN_TEST (reconnect_stop_on_refused);
+    //RUN_TEST (reconnect_default);
+    //RUN_TEST (reconnect_success);
+    //RUN_TEST (reconnect_stop_on_refused);
+    RUN_TEST (reconnect_stop_on_handshake_failed);
 
     return UNITY_END ();
 }

@@ -160,6 +160,9 @@ class stream_engine_base_t : public io_object_t, public i_engine
 
     const std::string _peer_address;
 
+    //  Size of greeting received so far
+    unsigned int _greeting_bytes_read;
+
   private:
     bool in_event_internal ();
 

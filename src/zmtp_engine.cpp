@@ -69,7 +69,6 @@ zmq::zmtp_engine_t::zmtp_engine_t (
   const endpoint_uri_pair_t &endpoint_uri_pair_) :
     stream_engine_base_t (fd_, options_, endpoint_uri_pair_),
     _greeting_size (v2_greeting_size),
-    _greeting_bytes_read (0),
     _subscription_required (false),
     _heartbeat_timeout (0)
 {
@@ -138,10 +137,12 @@ bool zmq::zmtp_engine_t::handshake ()
     if (_outsize == 0)
         set_pollout ();
 
+    #if 0
     if (_has_handshake_timer) {
         cancel_timer (handshake_timer_id);
         _has_handshake_timer = false;
     }
+    #endif
 
     return true;
 }
@@ -256,6 +257,12 @@ zmq::zmtp_engine_t::handshake_fun_t zmq::zmtp_engine_t::select_handshake_fun (
 
 bool zmq::zmtp_engine_t::handshake_v1_0_unversioned ()
 {
+    if ((_options.min_zmtp[0] != 0) || (_options.min_zmtp[1] != 0)) {
+        // reject unversioned connections if ZMQ_MIN_ZMTP_VERSION specified
+        error (protocol_error);
+        return false;
+    }
+
     //  We send and receive rest of routing id message
     if (session ()->zap_enabled ()) {
         // reject ZMTP 1.0 connections if ZAP is enabled
@@ -313,6 +320,12 @@ bool zmq::zmtp_engine_t::handshake_v1_0_unversioned ()
 
 bool zmq::zmtp_engine_t::handshake_v1_0 ()
 {
+    if ( ( (_options.min_zmtp[0] != 0) || (_options.min_zmtp[1] != 0))
+        && (memcmp(MIN_ZMTP_VERSION_1_0, _options.min_zmtp, sizeof(MIN_ZMTP_VERSION_1_0)) < 0) ) {
+        error (protocol_error);
+        return false;
+    }
+
     if (session ()->zap_enabled ()) {
         // reject ZMTP 1.0 connections if ZAP is enabled
         error (protocol_error);
@@ -331,6 +344,12 @@ bool zmq::zmtp_engine_t::handshake_v1_0 ()
 
 bool zmq::zmtp_engine_t::handshake_v2_0 ()
 {
+    if ( ( (_options.min_zmtp[0] != 0) || (_options.min_zmtp[1] != 0))
+        && (memcmp(MIN_ZMTP_VERSION_2_0, _options.min_zmtp, sizeof(MIN_ZMTP_VERSION_2_0)) < 0) ) {
+        error (protocol_error);
+        return false;
+    }
+
     if (session ()->zap_enabled ()) {
         // reject ZMTP 2.0 connections if ZAP is enabled
         error (protocol_error);
@@ -411,6 +430,12 @@ bool zmq::zmtp_engine_t::handshake_v3_x ()
 
 bool zmq::zmtp_engine_t::handshake_v3_0 ()
 {
+    if ( ( (_options.min_zmtp[0] != 0) || (_options.min_zmtp[1] != 0))
+        && (memcmp(MIN_ZMTP_VERSION_3_0, _options.min_zmtp, sizeof(MIN_ZMTP_VERSION_3_0)) < 0) ) {
+        error (protocol_error);
+        return false;
+    }
+
     _encoder = new (std::nothrow) v2_encoder_t (_options.out_batch_size);
     alloc_assert (_encoder);
 
@@ -423,9 +448,16 @@ bool zmq::zmtp_engine_t::handshake_v3_0 ()
 
 bool zmq::zmtp_engine_t::handshake_v3_1 ()
 {
+    if ( ( (_options.min_zmtp[0] != 0) || (_options.min_zmtp[1] != 0))
+        && (memcmp(MIN_ZMTP_VERSION_3_1, _options.min_zmtp, sizeof(MIN_ZMTP_VERSION_3_1)) < 0) ) {
+        error (protocol_error);
+        return false;
+    }
+
     _encoder = new (std::nothrow) v3_1_encoder_t (_options.out_batch_size);
     alloc_assert (_encoder);
 
+    // TODO check
     _decoder = new (std::nothrow) v2_decoder_t (
       _options.in_batch_size, _options.maxmsgsize, _options.zero_copy);
     alloc_assert (_decoder);

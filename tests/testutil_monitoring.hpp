@@ -76,4 +76,7 @@ void expect_monitor_event_v2 (void *monitor_,
                               const char *expected_local_address_ = NULL,
                               const char *expected_remote_address_ = NULL);
 
+
+const char* get_zmqEventName(uint64_t event);
+
 #endif
