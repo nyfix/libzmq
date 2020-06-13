@@ -366,3 +366,20 @@ const char* get_zmqEventName(uint64_t event)
       default                                   : return "UNKNOWN";
    }
 }
+
+void print_events(void* socket, int timeout, int limit)
+{
+    // print events received
+    int value;
+    char *event_address;
+    int event = get_monitor_event_with_timeout (socket, &value, &event_address,
+                                             timeout);
+    int i = 0;;
+    while ((event != -1) && (++i < limit)) {
+        const char* eventName = get_zmqEventName(event);
+        printf("Got event: %s\n", eventName);
+        event = get_monitor_event_with_timeout (socket, &value, &event_address,
+                                             timeout);
+    }
+
+}
