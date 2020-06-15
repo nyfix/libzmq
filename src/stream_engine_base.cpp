@@ -734,10 +734,7 @@ void zmq::stream_engine_base_t::timer_event (int id_)
     if (id_ == handshake_timer_id) {
         _has_handshake_timer = false;
         //  handshake timer expired before handshake completed, so engine fail
-        if (_greeting_bytes_read > 0)
-            error (protocol_error);
-        else
-            error (timeout_error);
+        error (timeout_error);
     } else if (id_ == heartbeat_ivl_timer_id) {
         _next_msg = &stream_engine_base_t::produce_ping_message;
         out_event ();
