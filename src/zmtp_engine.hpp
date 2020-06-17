@@ -119,6 +119,9 @@ class zmtp_engine_t ZMQ_FINAL : public stream_engine_base_t
     unsigned char _greeting_recv[v3_greeting_size];
     unsigned char _greeting_send[v3_greeting_size];
 
+    //  Size of greeting received so far
+    unsigned int _greeting_bytes_read;
+
     //  Indicates whether the engine is to inject a phantom
     //  subscription message into the incoming stream.
     //  Needed to support old peers.

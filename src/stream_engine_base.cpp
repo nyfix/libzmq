@@ -122,7 +122,6 @@ zmq::stream_engine_base_t::stream_engine_base_t (
     _has_timeout_timer (false),
     _has_heartbeat_timer (false),
     _peer_address (get_peer_address (fd_)),
-    _greeting_bytes_read (0),
     _s (fd_),
     _handle (static_cast<handle_t> (NULL)),
     _plugged (false),
